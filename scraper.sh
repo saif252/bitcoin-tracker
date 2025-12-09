@@ -75,11 +75,12 @@ echo "Vol/Mkt Cap (%): $vol_to_mkt_cap"
 echo "Circulating Supply: $circ_supply"
 
 # Insert data into sql
-mysql -h 127.0.0.1 -P 3306 -u $DB_USER $DB_NAME <<EOF
+/Applications/XAMPP/xamppfiles/bin/mysql -h 127.0.0.1 -P 3306 -u $DB_USER $DB_NAME <<EOF
 INSERT INTO asset_metrics
 (asset_id, timestamp, price, percent_change_24h, market_cap, volume_24h, fdv, vol_to_mkt_cap, circulating_supply)
 VALUES ($ASSET_ID, NOW(), $price, $change, $market_cap, $volume_24h, $fdv, $vol_to_mkt_cap, $circ_supply);
 EOF
+
 
 # If data couldnt be inserted then exits and prints error message
 if [ $? -ne 0 ]; then
