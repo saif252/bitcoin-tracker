@@ -233,6 +233,83 @@ EOF
     echo "Circulating Supply (7 days) plot saved to $OUTPUT_PNG"
 }
 
+# Function: Market Cap vs Time (Last 7 Days)
+market_cap_7days() {
+    TXT_FILE="market_cap_7days.txt"
+    OUTPUT_PNG="market_cap_7days.png"
+
+    #Query database
+    mysql -u "$DB_USER" -h 127.0.0.1 -P 3306 -D "$DB_NAME" -B -N -e "
+        SELECT DATE_FORMAT(timestamp,'%Y-%m-%d %H:%i:%s'), market_cap
+        FROM asset_metrics
+        WHERE asset_id=$ASSET_ID
+            AND timestamp >= NOW() - INTERVAL 7 DAY
+        ORDER BY timestamp;
+    " > "$TXT_FILE"
+
+    # Check file not empty
+    if [[ ! -s "$TXT_FILE" ]]; then
+        echo "Error: '$TXT_FILE' is empty. Cannot plot."
+        exit 1
+    fi
+
+    #Gnuplot
+    gnuplot <<-EOF
+        set terminal png size 1000,600
+        set output "$OUTPUT_PNG"
+        set datafile separator "\t"
+        set xdata time
+        set timefmt "%Y-%m-%d %H:%M:%S"
+        set format x "%m-%d\n%H:%M"
+        set xlabel "Time"
+        set ylabel "Market Cap (USD)"
+        set title "Bitcoin Market Cap - Last 7 Days"
+        set grid
+        plot "$TXT_FILE" using 1:2 with linespoints title "Market Cap" lt rgb "orange" lw 2 pt 7
+EOF
+
+    echo "Market Cap (7 days) plot saved to $OUTPUT_PNG"
+}
+
+vol_mcap_24hr() {
+    TXT_FILE="vol_mcap_24hr.txt"
+    OUTPUT_PNG="vol_mcap_24hr.png"
+
+    # Query Database
+    mysql -u "$DB_USER" -h 127.0.0.1 -P 3306 -D "$DB_NAME" -B -N -e "
+        SELECT
+            DATE_FORMAT(timestamp,'%Y-%m-%d %H:%i:%s'),
+            (volume_24h / market_cap) * 100
+        FROM asset_metrics
+        WHERE asset_id = $ASSET_ID
+            AND timestamp >= NOW() - INTERVAL 24 HOUR
+        ORDER BY timestamp;
+    " > "$TXT_FILE"
+
+    # Check file not empty
+    if [[ ! -s "$TXT_FILE" ]]; then
+        echo "Error: '$TXT_FILE' is empty. Cannot plot."
+        exit 1
+    fi
+
+    #GnuPlot
+    gnuplot <<-EOF
+        set terminal png size 1000,600
+        set output "$OUTPUT_PNG"
+        set datafile separator "\t"
+        set xdata time
+        set timefmt "%Y-%m-%d %H:%M:%S"
+        set format x "%H:%M"
+        set xlabel "Time"
+        set ylabel "Volume / Market Cap (%)"
+        set title "Bitcoin Volume / Market Cap (%) - Last 24 Hours"
+        set grid
+        plot "$TXT_FILE" using 1:2 with linespoints title "Vol / MCap (%)" lw 2 pt 7
+EOF
+
+    echo "Volume / Market Cap (24hr) plot saved to $OUTPUT_PNG"
+}
+
 # Main Menu
 case "$1" in
     price_24hr)
