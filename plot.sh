@@ -80,6 +80,45 @@ EOF
     echo "Price (7 days) plot saved to $OUTPUT_PNG"
 }
 
+# Function: Market Cap / FDV Last 7 Days
+mcap_fdv() {
+    TXT_FILE="mcap_fdv_7days.txt"
+    OUTPUT_PNG="mcap_fdv_7days.png"
+    MAX_SUPPLY=21000000
+
+    # Query database
+    mysql -u "$DB_USER" -h 127.0.0.1 -P 3306 -D "$DB_NAME" -B -N -e "
+        SELECT DATE_FORMAT(timestamp,'%Y-%m-%d %H:%i:%s'), market_cap / (price * $MAX_SUPPLY)
+        FROM asset_metrics
+        WHERE asset_id=$ASSET_ID
+            AND timestamp >= NOW() - INTERVAL 7 DAY
+        ORDER BY timestamp;
+    " > "$TXT_FILE"
+
+    #file not empty
+    if [[ ! -s "$TXT_FILE" ]]; then
+        echo "Error: '$TXT_FILE' is empty. Cannot plot."
+        exit 1
+    fi
+
+    #Gnuplot
+    gnuplot <<-EOF
+        set terminal png size 1000,600
+        set output "$OUTPUT_PNG"
+        set datafile separator "\t"
+        set xdata time
+        set timefmt "%Y-%m-%d %H:%M:%S"
+        set format x "%d-%m"
+        set xlabel "Date"
+        set ylabel "Market Cap / FDV"
+        set title "Bitcoin Market Cap / FDV - Last 7 Days"
+        set grid
+        plot "$TXT_FILE" using 1:2 with linespoints title "MCap / FDV" lt rgb "green" lw 2 pt 7
+EOF
+
+    echo "Market Cap / FDV (7 days) plot saved to $OUTPUT_PNG"
+}
+
 # Main Menu
 case "$1" in
     price_24hr)
