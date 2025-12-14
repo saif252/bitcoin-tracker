@@ -153,6 +153,3 @@ bash plot.sh price_7days
 
 ---
 
-## License
-
-This project is for academic purposes and coursework submission only.
