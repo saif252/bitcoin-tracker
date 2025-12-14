@@ -157,6 +157,44 @@ EOF
     echo "Volume (24h) plot saved to $OUTPUT_PNG"
 }
 
+# Function: Plot Percent Change 24h vs Time
+percent_change_24hr() {
+    TXT_FILE="percent_change_24hr.txt"
+    OUTPUT_PNG="percent_change_24hr.png"
+
+    # Query timestamp and percent_change_24h
+    mysql -u "$DB_USER" -h 127.0.0.1 -P 3306 -D "$DB_NAME" -B -N -e "
+        SELECT DATE_FORMAT(timestamp,'%Y-%m-%d %H:%i:%s'), percent_change_24h
+        FROM asset_metrics
+        WHERE asset_id=$ASSET_ID
+            AND timestamp >= NOW() - INTERVAL 24 HOUR
+        ORDER BY timestamp;
+    " > "$TXT_FILE"
+
+    # Check file not empty
+    if [[ ! -s "$TXT_FILE" ]]; then
+        echo "Error: '$TXT_FILE' is empty. Cannot plot."
+        exit 1
+    fi
+
+    #Gnuplot
+    gnuplot <<-EOF
+        set terminal png size 1000,600
+        set output "$OUTPUT_PNG"
+        set datafile separator "\t"
+        set xdata time
+        set timefmt "%Y-%m-%d %H:%M:%S"
+        set format x "%H:%M"
+        set xlabel "Time"
+        set ylabel "24h Price Change (%)"
+        set title "Bitcoin 24h Percent Change"
+        set grid
+        plot "$TXT_FILE" using 1:2 with linespoints title "24h Change" lt rgb "orange" lw 2 pt 7
+EOF
+
+    echo "Percent Change (24h) plot saved to $OUTPUT_PNG"
+}
+
 # Main Menu
 case "$1" in
     price_24hr)
