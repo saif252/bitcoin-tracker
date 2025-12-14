@@ -43,6 +43,43 @@ EOF
     echo "Price (24hr) plot saved to $OUTPUT_PNG"
 }
 
+# Price 7 days
+price_7days() {
+    TXT_FILE="price_7days.txt"
+    OUTPUT_PNG="price_7days.png"
+
+    # Query database
+    mysql -u "$DB_USER" -h 127.0.0.1 -P 3306 -D "$DB_NAME" -B -N -e "
+        SELECT DATE_FORMAT(timestamp,'%Y-%m-%d %H:%i:%s'), price
+        FROM asset_metrics
+        WHERE asset_id=$ASSET_ID
+            AND timestamp >= NOW() - INTERVAL 7 DAY
+        ORDER BY timestamp;
+    " > "$TXT_FILE"
+
+    if [[ ! -s "$TXT_FILE" ]]; then
+        echo "Error: '$TXT_FILE' is empty. Cannot plot."
+        exit 1
+    fi
+
+    #Gnuplot
+    gnuplot <<-EOF
+        set terminal png size 1000,600
+        set output "$OUTPUT_PNG"
+        set datafile separator "\t"
+        set xdata time
+        set timefmt "%Y-%m-%d %H:%M:%S"
+        set format x "%m-%d\n%H:%M"
+        set xlabel "Time"
+        set ylabel "Price (USD)"
+        set title "Bitcoin Price - Last 7 Days"
+        set grid
+        plot "$TXT_FILE" using 1:2 with linespoints title "Price" lt rgb "green" lw 2 pt 7
+EOF
+
+    echo "Price (7 days) plot saved to $OUTPUT_PNG"
+}
+
 # Main Menu
 case "$1" in
     price_24hr)
