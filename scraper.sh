@@ -89,3 +89,5 @@ if [ $? -ne 0 ]; then
     echo "Error: Failed to insert data into MySQL."
     exit 1
 fi
+
+echo "Data inserted successfully!"
