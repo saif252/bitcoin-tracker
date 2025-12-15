@@ -195,6 +195,7 @@ EOF
     echo "Percent Change (24h) plot saved to $OUTPUT_PNG"
 }
 
+
 # Function: Circulating Supply vs Time (Last 7 Days)
 circulating_supply_7days() {
     TXT_FILE="circulating_supply_7days.txt"
@@ -314,7 +315,7 @@ mcap_price() {
     TXT_FILE="mcap_price.txt"
     OUTPUT_PNG="mcap_price.png"
 
-    #Query Database
+    # Query Database
     mysql -u "$DB_USER" -h 127.0.0.1 -P 3306 -D "$DB_NAME" -B -N -e "
         SELECT price, market_cap
         FROM asset_metrics
@@ -323,13 +324,13 @@ mcap_price() {
         ORDER BY timestamp;
     " > "$TXT_FILE"
 
-    #Check file not empty
+    # Check file not empty
     if [[ ! -s "$TXT_FILE" ]]; then
         echo "Error: '$TXT_FILE' is empty. Cannot plot."
         exit 1
     fi
 
-    #Gnuplot
+    # Gnuplot - Scatter Plot
     gnuplot <<-EOF
         set terminal png size 1000,600
         set output "$OUTPUT_PNG"
@@ -338,10 +339,9 @@ mcap_price() {
         set ylabel "Market Cap (USD)"
         set title "Bitcoin Market Cap vs Price - Last 7 Days"
         set grid
-        plot "$TXT_FILE" using 1:2 with linespoints lt rgb "purple" lw 2 pt 7 title "MCap vs Price"
+        plot "$TXT_FILE" using 1:2 with points pt 7 lc rgb "purple" title "MCap vs Price"
 EOF
-
-    echo "Market Cap vs Price plot saved to $OUTPUT_PNG"
+    echo "Market Cap vs Price scatter plot saved to $OUTPUT_PNG"
 }
 
 # Function: Price vs Volume/Market Cap (%)
